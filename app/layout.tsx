@@ -76,9 +76,9 @@ export const metadata: Metadata = {
     creator: "@actorscharity",
   },
   icons: {
-    icon: [{ url: "/icon.png", type: "image/png" }],
-    apple: [{ url: "/icon.png" }],
-    shortcut: "/icon.png",
+    icon: [{ url: "/acflogo.png", type: "image/png" }],
+    apple: [{ url: "/acflogo.png" }],
+    shortcut: "/acflogo.png",
   },
   robots: {
     index: true,
