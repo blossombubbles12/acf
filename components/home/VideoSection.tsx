@@ -14,7 +14,7 @@ export function VideoSection() {
     // Fallback to static video if none uploaded yet to 'video' folder
     const videoUrl = videos && videos.length > 0 && Array.isArray(videos) && !videos[0].includes('unsplash') 
         ? videos[0] 
-        : "https://res.cloudinary.com/dtw0ajpwa/video/upload/v1772674929/CKC_CLASSS_OF_1981_DAY_3_TEASER_o2880p.mp4";
+        : "https://res.cloudinary.com/dtw0ajpwa/video/upload/q_auto/f_auto/v1775238046/WhatsApp_Video_2026-04-03_at_5.08.58_PM_n57tg8.mp4";
         
     const thumbnail = getRandomImage(8);
 
