@@ -1,15 +1,31 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Executive Board | Actors Charity Foundation (ACF)",
+    title: "Executive Board",
     description:
-        "The leadership team driving social change through the entertainment industry.",
+        "Meet the leadership team of the Actors Charity Foundation (ACF) — the visionary executives driving social change through the entertainment industry in Nigeria.",
+    keywords: [
+        "ACF executives",
+        "Actors Charity Foundation leadership",
+        "Ejike Asiegbu",
+        "Nollywood leaders",
+        "ACF board of directors",
+        "Nigerian entertainment philanthropy",
+    ],
+    alternates: {
+        canonical: "/executives",
+    },
     openGraph: {
         title: "Executive Board | Actors Charity Foundation (ACF)",
-        description:
-            "The leadership team driving social change through the entertainment industry.",
+        description: "The leadership team driving social change through the entertainment industry.",
         url: "/executives",
-        images: [{ url: "/acflogo.png", alt: "Actors Charity Foundation (ACF) Executives" }],
+        images: [{ url: "/acflogo.png", width: 1200, height: 630, alt: "ACF Executive Board" }],
+    },
+    twitter: {
+        card: "summary",
+        title: "Executive Board | Actors Charity Foundation",
+        description: "Leadership driving Nollywood's humanitarian mission.",
+        images: ["/acflogo.png"],
     },
 };
 

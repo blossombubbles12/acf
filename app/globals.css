@@ -22,8 +22,6 @@
 
   --color-accent: #d97706; /* Vibrant Gold */
   --color-accent-foreground: #0f172a;
-  
-  /* Compact spacing overrides if needed, but we'll do it in JSX mostly */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -37,8 +35,10 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
-  line-height: 1.5; /* Slightly tighter than default 1.6 */
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -46,6 +46,43 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.02em;
 }
 
+/* ─── Scrollbar Styling ─── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ─── Smooth Scroll ─── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ─── Selection Highlight ─── */
+::selection {
+  background: rgba(245, 158, 11, 0.25);
+  color: #0f172a;
+}
+
+/* ─── Focus ring ─── */
+*:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Animations ─── */
 @keyframes marquee {
   0% { transform: translateX(0%); }
   100% { transform: translateX(-50%); }
@@ -53,4 +90,57 @@ h1, h2, h3, h4, h5, h6 {
 
 .animate-marquee {
   animation: marquee 40s linear infinite;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(245, 158, 11, 0.1) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* ─── Hide Scrollbar (for carousels) ─── */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ─── Skip to Content (A11y) ─── */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  z-index: 9999;
+  padding: 1rem 2rem;
+  background: #0f172a;
+  color: #f8fafc;
+  text-decoration: none;
+  font-weight: bold;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 0;
 }
