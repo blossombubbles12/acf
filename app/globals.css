@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a; /* Deep charcoal/blue */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans), system-ui;
+  --font-outfit: var(--font-outfit);
+
+  --color-primary: #1e293b; /* Premium Navy */
+  --color-primary-foreground: #f8fafc;
+
+  --color-secondary: #b45309; /* Rich Amber/Gold */
+  --color-secondary-foreground: #f8fafc;
+
+  --color-navy: #0f172a;
+  --color-navy-foreground: #f8fafc;
+
+  --color-accent: #d97706; /* Vibrant Gold */
+  --color-accent-foreground: #0f172a;
+  
+  /* Compact spacing overrides if needed, but we'll do it in JSX mostly */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #020617;
+    --foreground: #f8fafc;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  line-height: 1.5; /* Slightly tighter than default 1.6 */
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-outfit);
+  letter-spacing: -0.02em;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
