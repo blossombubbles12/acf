@@ -147,28 +147,46 @@ export function PostCard({ post, onUpdate }: PostProps) {
 
             {/* Post Content */}
             <div className="px-5 sm:px-6 py-2 sm:py-4">
-                <p className="text-gray-700 leading-relaxed text-base sm:text-lg whitespace-pre-wrap">{post.content}</p>
+                <div 
+                    className="text-gray-700 leading-relaxed text-base sm:text-lg rich-text-content"
+                    dangerouslySetInnerHTML={{ __html: post.content }}
+                />
+                <style jsx>{`
+                    .rich-text-content :global(p) { margin-bottom: 0.75rem; }
+                    .rich-text-content :global(ul), .rich-text-content :global(ol) { margin: 1rem 0; padding-left: 1.5rem; }
+                    .rich-text-content :global(li) { margin-bottom: 0.25rem; }
+                    .rich-text-content :global(blockquote) { border-left: 4px solid #f59e0b; padding-left: 1rem; color: #4b5563; font-style: italic; margin: 1rem 0; }
+                    .rich-text-content :global(a) { color: #1e40af; text-decoration: underline; }
+                `}</style>
             </div>
 
-            {/* Post Media */}
+            {/* Post Media - Facebook Style Grid */}
             {mediaItems.length > 0 && (
-                <div className={`mt-4 grid gap-1 ${mediaItems.length === 1 ? 'grid-cols-1' :
+                <div className={`mt-4 grid gap-1 border-y border-gray-50 ${mediaItems.length === 1 ? 'grid-cols-1' :
                     mediaItems.length === 2 ? 'grid-cols-2' :
-                        'grid-cols-2 lg:grid-cols-3'
+                        mediaItems.length === 3 ? 'grid-cols-2' :
+                            'grid-cols-2 lg:grid-cols-2'
                     }`}>
-                    {mediaItems.map((item: any, idx: number) => (
-                        <div key={idx} className={`relative overflow-hidden ${mediaItems.length === 1 ? 'aspect-video' : 'aspect-square'
+                    {mediaItems.slice(0, 4).map((item: any, idx: number) => (
+                        <div key={idx} className={`relative overflow-hidden group bg-slate-100 ${mediaItems.length === 1 ? 'aspect-video' : 
+                            (mediaItems.length === 3 && idx === 0) ? 'row-span-2 aspect-auto' : 'aspect-square'
                             }`}>
                             {item.type === 'video' ? (
-                                <video src={item.url} controls className="w-full h-full object-cover" />
+                                <video src={item.url} controls className="w-full h-full object-contain bg-black" />
                             ) : (
                                 <Image
                                     src={transformCloudinary(item.url)}
                                     alt="Post media"
                                     fill
-                                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                                    className="object-cover transition-transform duration-1000 group-hover:scale-110"
                                     unoptimized
                                 />
+                            )}
+                            {/* Overlay for more items */}
+                            {idx === 3 && mediaItems.length > 4 && (
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-2xl font-black">
+                                    +{mediaItems.length - 4}
+                                </div>
                             )}
                         </div>
                     ))}

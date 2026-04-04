@@ -36,14 +36,29 @@ export async function PUT(
 
         const params = await props.params;
         const id = params.id;
-        const body = await request.json();
-        const { content, status } = body;
+        
+        // Support both JSON (for quick text edits) and FormData (for media updates)
+        const contentType = request.headers.get('content-type') || '';
+        let content, status;
+
+        if (contentType.includes('application/json')) {
+            const body = await request.json();
+            content = body.content;
+            status = body.status;
+        } else {
+            // Placeholder for FormData support if we allow media upload during EDIT
+            const formData = await request.formData();
+            content = formData.get('content') as string;
+            status = formData.get('status') as string;
+            // Handle media upload logic here if needed...
+        }
 
         const post = await sql`
             UPDATE posts 
             SET 
                 content = ${content}, 
-                status = ${status || 'published'}
+                status = ${status || 'published'},
+                updated_at = NOW()
             WHERE id = ${id}
             RETURNING *
         `;
