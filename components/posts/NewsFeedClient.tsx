@@ -5,8 +5,10 @@ import { CreatePostForm } from "@/components/posts/CreatePostForm";
 import { PostCard } from "@/components/posts/PostCard";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
+import { useAuth } from "@/hooks/useAuth";
 
 export function NewsFeedClient() {
+    const { isAdmin, loading: authLoading } = useAuth();
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const { success, ToastContainer } = useToast();
@@ -32,10 +34,16 @@ export function NewsFeedClient() {
         fetchPosts();
     }, []);
 
+    if (authLoading) return (
+        <div className="flex justify-center py-20">
+            <Loader2 className="w-10 h-10 animate-spin text-primary/20" />
+        </div>
+    );
+
     return (
         <div className="max-w-3xl mx-auto relative text-sm">
             <ToastContainer />
-            <CreatePostForm onSuccess={handleCreateSuccess} />
+            {isAdmin && <CreatePostForm onSuccess={handleCreateSuccess} />}
 
             <div className="space-y-8">
                 <div className="flex items-center gap-3 mb-6">

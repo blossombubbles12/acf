@@ -8,6 +8,7 @@ import { transformCloudinary } from "@/lib/cloudinary-client";
 import { DeleteConfirmModal } from "@/components/admin/DeleteConfirmModal";
 import { EditPostModal } from "./EditPostModal";
 import { useToast } from "@/hooks/useToast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PostProps {
     post: {
@@ -21,6 +22,7 @@ interface PostProps {
 }
 
 export function PostCard({ post, onUpdate }: PostProps) {
+    const { isAdmin } = useAuth();
     const mediaItems = Array.isArray(post.media) ? post.media : [];
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
@@ -103,47 +105,53 @@ export function PostCard({ post, onUpdate }: PostProps) {
                         <h4 className="font-bold text-gray-900 text-sm sm:text-base leading-tight">ACF Admin</h4>
                         <div className="flex items-center gap-2 text-gray-400 text-[9px] sm:text-[10px] font-black uppercase tracking-widest mt-0.5 sm:mt-1">
                             <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
-                            <span>•</span>
-                            {post.status === 'published' ? (
-                                <><Globe className="w-2.5 h-2.5 sm:w-3 h-3" /> Public</>
-                            ) : (
-                                <><Lock className="w-2.5 h-2.5 sm:w-3 h-3" /> Draft</>
+                            {isAdmin && (
+                                <>
+                                    <span>•</span>
+                                    {post.status === 'published' ? (
+                                        <><Globe className="w-2.5 h-2.5 sm:w-3 h-3" /> Public</>
+                                    ) : (
+                                        <><Lock className="w-2.5 h-2.5 sm:w-3 h-3 text-amber-500" /> Draft</>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
                 </div>
-                <div className="relative">
-                    <button
-                        onClick={() => setShowActions(!showActions)}
-                        className="p-2 hover:bg-slate-50 rounded-full transition-colors"
-                    >
-                        <MoreHorizontal className="w-5 h-5 text-gray-400" />
-                    </button>
-                    {showActions && (
-                        <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 py-2 min-w-[160px] z-10">
-                            <button
-                                onClick={() => {
-                                    setShowEditModal(true);
-                                    setShowActions(false);
-                                }}
-                                className="w-full px-4 py-2 text-left text-sm font-bold text-gray-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
-                            >
-                                <Edit2 className="w-4 h-4 text-primary" />
-                                Edit Post
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setShowDeleteModal(true);
-                                    setShowActions(false);
-                                }}
-                                className="w-full px-4 py-2 text-left text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                Delete Post
-                            </button>
-                        </div>
-                    )}
-                </div>
+                {isAdmin && (
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowActions(!showActions)}
+                            className="p-2 hover:bg-slate-50 rounded-full transition-colors"
+                        >
+                            <MoreHorizontal className="w-5 h-5 text-gray-400" />
+                        </button>
+                        {showActions && (
+                            <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 py-2 min-w-[160px] z-10">
+                                <button
+                                    onClick={() => {
+                                        setShowEditModal(true);
+                                        setShowActions(false);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-sm font-bold text-gray-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
+                                >
+                                    <Edit2 className="w-4 h-4 text-primary" />
+                                    Edit Post
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowDeleteModal(true);
+                                        setShowActions(false);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    Delete Post
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Post Content */}
