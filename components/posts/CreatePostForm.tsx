@@ -1,58 +1,52 @@
-"use client";
-
 import { useState } from "react";
 import Image from "next/image";
-import { Image as ImageIcon, Video, X, Send, Loader2, Globe, Lock, Play } from "lucide-react";
+import { Image as ImageIcon, Video, X, Send, Loader2, Globe, Lock, Play, Cloud } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import RichTextEditor from "@/components/ui/RichTextEditor";
+import { CldUploadWidget } from "next-cloudinary";
 
 export function CreatePostForm({ onSuccess }: { onSuccess: () => void }) {
     const [content, setContent] = useState("");
-    const [media, setMedia] = useState<File[]>([]);
-    const [previews, setPreviews] = useState<{ url: string; type: string }[]>([]);
+    const [mediaItems, setMediaItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState("published");
     const { error: toastError } = useToast();
 
-    const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            const files = Array.from(e.target.files);
-            setMedia(prev => [...prev, ...files]);
-
-            const newPreviews = files.map(file => ({
-                url: URL.createObjectURL(file),
-                type: file.type.startsWith('video') ? 'video' : 'image'
-            }));
-            setPreviews(prev => [...prev, ...newPreviews]);
+    const handleUploadSuccess = (result: any) => {
+        const info = result.info;
+        if (info) {
+            setMediaItems(prev => [...prev, {
+                url: info.secure_url,
+                type: info.resource_type,
+                public_id: info.public_id
+            }]);
         }
     };
 
     const removeMedia = (index: number) => {
-        setMedia(prev => prev.filter((_, i) => i !== index));
-        setPreviews(prev => prev.filter((_, i) => i !== index));
+        setMediaItems(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const strippedContent = content.replace(/<[^>]*>/g, '').trim();
-        if (!strippedContent && media.length === 0) return;
+        if (!strippedContent && mediaItems.length === 0) return;
 
         setLoading(true);
-        const formData = new FormData();
-        formData.append("content", content);
-        formData.append("status", status);
-        media.forEach((file) => formData.append("media", file));
-
         try {
             const res = await fetch("/api/posts", {
                 method: "POST",
-                body: formData,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    content,
+                    status,
+                    media: mediaItems // Already uploaded through the widget
+                }),
             });
 
             if (res.ok) {
                 setContent("");
-                setMedia([]);
-                setPreviews([]);
+                setMediaItems([]);
                 onSuccess();
             } else {
                 const data = await res.json();
@@ -77,36 +71,38 @@ export function CreatePostForm({ onSuccess }: { onSuccess: () => void }) {
                         <RichTextEditor
                             value={content}
                             onChange={setContent}
-                            placeholder="What's going on in the ACF ecosystem?"
+                            placeholder="Share an update via Cloudinary services..."
                         />
                     </div>
                 </div>
 
-                {previews.length > 0 && (
-                    <div className={`grid gap-2 mb-6 ${previews.length === 1 ? 'grid-cols-1' :
-                        previews.length === 2 ? 'grid-cols-2' :
+                {mediaItems.length > 0 && (
+                    <div className={`grid gap-2 mb-6 ${mediaItems.length === 1 ? 'grid-cols-1' :
+                        mediaItems.length === 2 ? 'grid-cols-2' :
                             'grid-cols-2 lg:grid-cols-3'
                         }`}>
-                        {previews.map((preview, idx) => (
-                            <div key={idx} className={`relative group border border-slate-100 rounded-2xl overflow-hidden shadow-sm ${previews.length === 1 ? 'aspect-video' : 'aspect-square'}`}>
-                                {preview.type === 'video' ? (
+                        {mediaItems.map((item, idx) => (
+                            <div key={idx} className={`relative group border border-slate-100 rounded-2xl overflow-hidden shadow-sm ${mediaItems.length === 1 ? 'aspect-video' : 'aspect-square'}`}>
+                                {item.type === 'video' ? (
                                     <div className="w-full h-full relative bg-slate-900 flex items-center justify-center">
                                         <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">
                                             <Play className="w-6 h-6 text-white fill-white" />
                                         </div>
-                                        <p className="absolute bottom-4 left-4 text-white text-[10px] font-black uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full backdrop-blur-md">Video Attachment</p>
                                     </div>
                                 ) : (
-                                    <Image src={preview.url} alt="Preview" fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+                                    <Image src={item.url} alt="Media" fill className="object-cover group-hover:scale-105 transition-transform duration-700" unoptimized />
                                 )}
                                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                                 <button
                                     type="button"
                                     onClick={() => removeMedia(idx)}
-                                    className="absolute top-3 right-3 p-2 bg-red-500 text-white rounded-full opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:scale-110 active:scale-95"
+                                    className="absolute top-3 right-3 p-2 bg-red-500 text-white rounded-full shadow-lg hover:scale-110 active:scale-95 transition-all"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
+                                <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-md px-2 py-1 rounded-lg">
+                                    <Cloud className="w-3 h-3 text-primary" />
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -114,11 +110,27 @@ export function CreatePostForm({ onSuccess }: { onSuccess: () => void }) {
 
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-100">
                     <div className="flex items-center gap-2">
-                        <label className="flex items-center gap-2.5 px-5 py-2.5 bg-slate-50 hover:bg-slate-100 active:scale-95 rounded-2xl cursor-pointer transition-all border border-slate-100">
-                            <input type="file" multiple className="hidden" onChange={handleMediaChange} accept="image/*,video/*" />
-                            <ImageIcon className="w-5 h-5 text-emerald-500" />
-                            <span className="text-xs font-black uppercase tracking-widest text-slate-600">Add Media</span>
-                        </label>
+                        <CldUploadWidget 
+                            uploadPreset="ml_default"
+                            onSuccess={handleUploadSuccess}
+                            options={{
+                                sources: ['local', 'url', 'camera', 'google_drive', 'dropbox', 'facebook', 'instagram'],
+                                multiple: true,
+                                folder: 'acf/posts'
+                            }}
+                        >
+                            {({ open }) => (
+                                <button 
+                                    type="button" 
+                                    onClick={() => open()}
+                                    className="flex items-center gap-2.5 px-5 py-2.5 bg-slate-50 hover:bg-slate-100 active:scale-95 rounded-2xl cursor-pointer transition-all border border-slate-100"
+                                >
+                                    <ImageIcon className="w-5 h-5 text-emerald-500" />
+                                    <span className="text-xs font-black uppercase tracking-widest text-slate-600">Cloud Upload</span>
+                                </button>
+                            )}
+                        </CldUploadWidget>
+
                         <div className="h-6 w-px bg-gray-100 mx-2" />
                         <div className="relative">
                             <select
@@ -137,7 +149,7 @@ export function CreatePostForm({ onSuccess }: { onSuccess: () => void }) {
 
                     <button
                         type="submit"
-                        disabled={loading || (!content.replace(/<[^>]*>/g, '').trim() && media.length === 0)}
+                        disabled={loading || (!content.replace(/<[^>]*>/g, '').trim() && mediaItems.length === 0)}
                         className="w-full sm:w-auto px-10 py-3.5 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-[11px]  flex items-center justify-center gap-3 hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 disabled:opacity-50 active:scale-95"
                     >
                         {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-4 h-4" /> Share Update</>}
@@ -147,4 +159,5 @@ export function CreatePostForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
     );
 }
+
 

@@ -8,39 +8,45 @@ export async function POST(request: Request) {
         const session = await getSession();
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const formData = await request.formData();
-        const content = formData.get('content') as string;
-        const mediaFiles = formData.getAll('media') as File[];
-        const status = (formData.get('status') as string) || 'published';
+        const contentType = request.headers.get('content-type') || '';
+        let content, status, mediaData = [];
 
-        let mediaUrls: string[] = [];
-        let mediaData: any[] = [];
+        if (contentType.includes('application/json')) {
+            const body = await request.json();
+            content = body.content;
+            status = body.status || 'published';
+            mediaData = body.media || [];
+        } else {
+            const formData = await request.formData();
+            content = formData.get('content') as string;
+            const mediaFiles = formData.getAll('media') as File[];
+            status = (formData.get('status') as string) || 'published';
 
-        if (mediaFiles.length > 0) {
-            const uploadPromises = mediaFiles.map(async (file) => {
-                const arrayBuffer = await file.arrayBuffer();
-                const buffer = Buffer.from(arrayBuffer);
-                return new Promise((resolve, reject) => {
-                    cloudinary.uploader.upload_stream(
-                        {
-                            folder: 'acf/posts',
-                            resource_type: 'auto'
-                        },
-                        (error, result) => {
-                            if (error) reject(error);
-                            else resolve(result);
-                        }
-                    ).end(buffer);
+            if (mediaFiles.length > 0) {
+                const uploadPromises = mediaFiles.map(async (file: File) => {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const buffer = Buffer.from(arrayBuffer);
+                    return new Promise<any>((resolve, reject) => {
+                        cloudinary.uploader.upload_stream(
+                            {
+                                folder: 'acf/posts',
+                                resource_type: 'auto'
+                            },
+                            (error, result) => {
+                                if (error) reject(error);
+                                else resolve(result);
+                            }
+                        ).end(buffer);
+                    });
                 });
-            });
 
-            const results = await Promise.all(uploadPromises) as any[];
-            mediaUrls = results.map(r => r.secure_url);
-            mediaData = results.map(r => ({
-                url: r.secure_url,
-                type: r.resource_type,
-                public_id: r.public_id
-            }));
+                const results = await Promise.all(uploadPromises);
+                mediaData = results.map((r: any) => ({
+                    url: r.secure_url,
+                    type: r.resource_type,
+                    public_id: r.public_id
+                }));
+            }
         }
 
         const post = await sql`

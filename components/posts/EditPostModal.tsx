@@ -17,12 +17,12 @@ interface EditPostModalProps {
     loading?: boolean;
 }
 
+import { CldUploadWidget } from "next-cloudinary";
+
 export function EditPostModal({ isOpen, onClose, onSave, post, loading = false }: EditPostModalProps) {
     const [content, setContent] = useState(post.content);
     const [status, setStatus] = useState(post.status);
     const [existingMedia, setExistingMedia] = useState<any[]>(post.media || []);
-    const [newMedia, setNewMedia] = useState<File[]>([]);
-    const [newPreviews, setNewPreviews] = useState<{ url: string; type: string }[]>([]);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -32,8 +32,6 @@ export function EditPostModal({ isOpen, onClose, onSave, post, loading = false }
             setContent(post.content);
             setStatus(post.status);
             setExistingMedia(post.media || []);
-            setNewMedia([]);
-            setNewPreviews([]);
         } else {
             document.body.style.overflow = "unset";
         }
@@ -41,44 +39,27 @@ export function EditPostModal({ isOpen, onClose, onSave, post, loading = false }
 
     if (!mounted || !isOpen) return null;
 
-    const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            const files = Array.from(e.target.files);
-            setNewMedia(prev => [...prev, ...files]);
-
-            const addedPreviews = files.map(file => ({
-                url: URL.createObjectURL(file),
-                type: file.type.startsWith('video') ? 'video' : 'image'
-            }));
-            setNewPreviews(prev => [...prev, ...addedPreviews]);
+    const handleUploadSuccess = (result: any) => {
+        const info = result.info;
+        if (info) {
+            setExistingMedia(prev => [...prev, {
+                url: info.secure_url,
+                type: info.resource_type,
+                public_id: info.public_id,
+                isNew: true // Flag to distinguish in UI if needed
+            }]);
         }
     };
 
-    const removeExisting = (index: number) => {
+    const removeMedia = (index: number) => {
         setExistingMedia(prev => prev.filter((_, i) => i !== index));
-    };
-
-    const removeNew = (index: number) => {
-        setNewMedia(prev => prev.filter((_, i) => i !== index));
-        setNewPreviews(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
-        // Prepare data to send back
-        // If we have new media, we must use FormData
-        if (newMedia.length > 0) {
-            const formData = new FormData();
-            formData.append('content', content);
-            formData.append('status', status);
-            formData.append('existingMedia', JSON.stringify(existingMedia));
-            newMedia.forEach(file => formData.append('media', file));
-            onSave(formData as any, status); // Cast to any to bypass the original string-only prop if needed, or update the prop type
-        } else {
-            // Can send JSON
-            onSave({ content, status, media: existingMedia } as any, status);
-        }
+        // Since we're using the widget, all media is already uploaded.
+        // We can just send the final set as JSON.
+        onSave({ content, status, media: existingMedia }, status);
     };
 
     return createPortal(
@@ -126,55 +107,50 @@ export function EditPostModal({ isOpen, onClose, onSave, post, loading = false }
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 pl-1">
-                                    Manage Media ({existingMedia.length + newMedia.length})
+                                    Manage Media ({existingMedia.length})
                                 </label>
-                                <label className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 rounded-xl cursor-pointer border border-slate-100 transition-all text-[10px] font-black uppercase tracking-widest text-slate-600">
-                                    <input type="file" multiple className="hidden" onChange={handleMediaChange} />
-                                    <ImageIcon className="w-3.5 h-3.5" />
-                                    Add New
-                                </label>
+                                <CldUploadWidget 
+                                    uploadPreset="ml_default"
+                                    onSuccess={handleUploadSuccess}
+                                    options={{
+                                        sources: ['local', 'url', 'camera', 'google_drive', 'dropbox', 'facebook', 'instagram'],
+                                        multiple: true,
+                                        folder: 'acf/posts'
+                                    }}
+                                >
+                                    {({ open }) => (
+                                        <button 
+                                            type="button" 
+                                            onClick={() => open()}
+                                            className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-100 transition-all text-[10px] font-black uppercase tracking-widest text-slate-600"
+                                        >
+                                            <ImageIcon className="w-3.5 h-3.5" />
+                                            Cloud Add
+                                        </button>
+                                    )}
+                                </CldUploadWidget>
                             </div>
 
                             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                                {/* Existing Media */}
                                 {existingMedia.map((media, idx) => (
-                                    <div key={`existing-${idx}`} className="relative aspect-square rounded-xl overflow-hidden group border border-slate-100">
+                                    <div key={idx} className={`relative aspect-square rounded-xl overflow-hidden group border ${media.isNew ? 'border-emerald-500/50' : 'border-slate-100'}`}>
                                         {media.type === 'video' ? (
                                              <div className="w-full h-full bg-slate-900 flex items-center justify-center">
-                                                <Play className="w-4 h-4 text-white/40" />
+                                                <Play className={`w-4 h-4 ${media.isNew ? 'text-emerald-400' : 'text-white/40'}`} />
                                              </div>
                                         ) : (
-                                            <Image src={media.url} alt="Existing" fill className="object-cover" unoptimized />
+                                            <Image src={media.url} alt="Media" fill className="object-cover" unoptimized />
                                         )}
                                         <button 
                                             type="button"
-                                            onClick={() => removeExisting(idx)}
+                                            onClick={() => removeMedia(idx)}
                                             className="absolute top-1.5 right-1.5 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:scale-110 transition-transform"
                                         >
                                             <X className="w-3 h-3" />
                                         </button>
-                                        <div className="absolute bottom-0 left-0 right-0 bg-primary/80 py-1 text-[8px] font-black uppercase tracking-widest text-center text-white">Current</div>
-                                    </div>
-                                ))}
-
-                                {/* New Additions */}
-                                {newPreviews.map((preview, idx) => (
-                                    <div key={`new-${idx}`} className="relative aspect-square rounded-xl overflow-hidden group border-2 border-emerald-500/50">
-                                        {preview.type === 'video' ? (
-                                            <div className="w-full h-full bg-slate-900 flex items-center justify-center">
-                                                <Play className="w-4 h-4 text-emerald-400" />
-                                            </div>
-                                        ) : (
-                                            <Image src={preview.url} alt="New" fill className="object-cover" />
-                                        )}
-                                        <button 
-                                            type="button"
-                                            onClick={() => removeNew(idx)}
-                                            className="absolute top-1.5 right-1.5 p-1.5 bg-red-500 text-white rounded-full shadow-lg"
-                                        >
-                                            <X className="w-3 h-3" />
-                                        </button>
-                                        <div className="absolute bottom-0 left-0 right-0 bg-emerald-500 py-1 text-[8px] font-black uppercase tracking-widest text-center text-white">New</div>
+                                        <div className={`absolute bottom-0 left-0 right-0 py-1 text-[8px] font-black uppercase tracking-widest text-center text-white ${media.isNew ? 'bg-emerald-500' : 'bg-primary/80'}`}>
+                                            {media.isNew ? 'New' : 'Current'}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -222,7 +198,7 @@ export function EditPostModal({ isOpen, onClose, onSave, post, loading = false }
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={loading || (!content.replace(/<[^>]*>/g, '').trim() && existingMedia.length === 0 && newMedia.length === 0)}
+                                    disabled={loading || (!content.replace(/<[^>]*>/g, '').trim() && existingMedia.length === 0)}
                                     className="flex-[2] px-6 py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:shadow-xl transition-all shadow-lg shadow-primary/20 disabled:opacity-70 flex items-center justify-center gap-2 active:scale-95"
                                 >
                                     {loading ? (
