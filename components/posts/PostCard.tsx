@@ -48,13 +48,14 @@ export function PostCard({ post, onUpdate }: PostProps) {
         }
     };
 
-    const handleEdit = async (content: string, status: string) => {
+    const handleEdit = async (editData: any, status: string) => {
         setIsSaving(true);
         try {
+            const isFormData = editData instanceof FormData;
             const res = await fetch(`/api/posts/${post.id}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ content, status })
+                headers: isFormData ? {} : { "Content-Type": "application/json" },
+                body: isFormData ? editData : JSON.stringify(editData)
             });
             if (res.ok) {
                 success("Post updated successfully!");

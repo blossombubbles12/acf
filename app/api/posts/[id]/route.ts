@@ -37,20 +37,53 @@ export async function PUT(
         const params = await props.params;
         const id = params.id;
         
-        // Support both JSON (for quick text edits) and FormData (for media updates)
         const contentType = request.headers.get('content-type') || '';
-        let content, status;
+        let content, status, finalMedia = [];
 
         if (contentType.includes('application/json')) {
             const body = await request.json();
             content = body.content;
             status = body.status;
+            finalMedia = body.media || [];
         } else {
-            // Placeholder for FormData support if we allow media upload during EDIT
             const formData = await request.formData();
             content = formData.get('content') as string;
             status = formData.get('status') as string;
-            // Handle media upload logic here if needed...
+            
+            const existingMediaStr = formData.get('existingMedia') as string;
+            const existingMedia = existingMediaStr ? JSON.parse(existingMediaStr) : [];
+            
+            const newMediaFiles = formData.getAll('media') as File[];
+            interface IMediaItem { url: string; type: string; public_id: string }
+            let newMediaData: IMediaItem[] = [];
+
+            if (newMediaFiles.length > 0) {
+                const uploadPromises = newMediaFiles.map(async (file) => {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const buffer = Buffer.from(arrayBuffer);
+                    return new Promise<any>((resolve, reject) => {
+                        cloudinary.uploader.upload_stream(
+                            {
+                                folder: 'acf/posts',
+                                resource_type: 'auto'
+                            },
+                            (error, result) => {
+                                if (error) reject(error);
+                                else resolve(result);
+                            }
+                        ).end(buffer);
+                    });
+                });
+
+                const results = await Promise.all(uploadPromises);
+                newMediaData = results.map(r => ({
+                    url: r.secure_url,
+                    type: r.resource_type,
+                    public_id: r.public_id
+                }));
+            }
+
+            finalMedia = [...existingMedia, ...newMediaData];
         }
 
         const post = await sql`
@@ -58,6 +91,7 @@ export async function PUT(
             SET 
                 content = ${content}, 
                 status = ${status || 'published'},
+                media = ${JSON.stringify(finalMedia)},
                 updated_at = NOW()
             WHERE id = ${id}
             RETURNING *
